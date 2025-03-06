@@ -5,12 +5,9 @@ namespace TaskManager.Models
 {
     public class User : IdentityUser
     {
-        public User ()
-        {
+        public User() {
             Tasks = new List<Tasks>();
         }
         public ICollection<Tasks> Tasks { get; set; }
-
-
     }
 }

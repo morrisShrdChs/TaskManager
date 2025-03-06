@@ -1,17 +1,22 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace TaskManager.Models
 {
     public class Tasks
     {
+        [Key]
         public int Id { get; set; }
-        public string Title { get; set; }
+        [Required]
+        public string Name { get; set; }
         public string Description { get; set; }
-        public string UserId { get; set; }
-        public DateTime StartDate { get; set; }
-        public DateTime ExpDate { get; set; }
-
-        public IdentityUser User { get; set; }
-
+        [Required]
+        public DateTimeOffset StartDate { get; set; }
+        public DateTimeOffset ExpDate { get; set; }
+        [Required]
+        public int Priority { get; set; }
+        [Required]
+        public int StatusId { get; set; }
+        [Required]
+        public User User { get; set; }
     }
 }
