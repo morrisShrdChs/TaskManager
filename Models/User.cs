@@ -9,5 +9,7 @@ namespace TaskManager.Models
             Tasks = new List<Tasks>();
         }
         public ICollection<Tasks> Tasks { get; set; }
+        public string Name { get; set;}
+        public string Role { get; set; }
     }
 }

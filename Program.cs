@@ -19,6 +19,7 @@ builder.Services.AddControllers().AddJsonOptions(x => x.JsonSerializerOptions.Re
 
 var app = builder.Build();
 
+app.MapControllers();
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 
