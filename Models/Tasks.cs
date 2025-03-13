@@ -16,7 +16,7 @@ namespace TaskManager.Models
         public int Priority { get; set; }
         [Required]
         public int StatusId { get; set; }
-        [Required]
-        public User User { get; set; }
+        public string? UserId { get; set; }
+        public User? User { get; set; }
     }
 }
