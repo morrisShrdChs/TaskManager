@@ -1,9 +1,14 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 using TaskManager.Models;
 using TaskManager.Models.Auth;
 
-namespace Task_Manager.Controllers
+namespace TaskManager.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
@@ -11,55 +16,80 @@ namespace Task_Manager.Controllers
     {
         private readonly UserManager<User> _userManager;
         private readonly SignInManager<User> _signInManager;
+        private readonly IConfiguration _configuration;
 
-        public AuthController(UserManager<User> userManager, SignInManager<User> signInManager)
+        public AuthController(UserManager<User> userManager, SignInManager<User> signInManager, IConfiguration configuration)
         {
             _userManager = userManager;
             _signInManager = signInManager;
+            _configuration = configuration;
         }
 
         [HttpPost("register")]
-        public async Task<IActionResult> Register([FromBody] RegisterDto model)
+        public async Task<IActionResult> Register(RegisterDto dto)
         {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-
             var user = new User
             {
-                UserName = model.UserName,
-                Email = model.Email,
-                Name = model.Name,
-                Role = model.Role
+                UserName = dto.UserName,
+                Email = dto.Email,
+                Name = dto.Name,
+                Role = dto.Role
             };
 
-            var result = await _userManager.CreateAsync(user, model.Password);
+            var result = await _userManager.CreateAsync(user, dto.Password);
 
             if (!result.Succeeded)
             {
                 return BadRequest(result.Errors);
             }
 
-            return Ok(new { message = "Регистрация прошла успешно", userId = user.Id });
+            return Ok("Пользователь успешно зарегистрирован");
         }
 
         [HttpPost("login")]
-        public async Task<IActionResult> Login([FromBody] LoginDto model)
+        public async Task<IActionResult> Login(LoginDto dto)
         {
-            if (!ModelState.IsValid)
+            var user = await _userManager.FindByNameAsync(dto.UserName);
+            if (user == null || !await _userManager.CheckPasswordAsync(user, dto.Password))
             {
-                return BadRequest(ModelState);
+                return Unauthorized("Неверные учетные данные");
             }
 
-            var result = await _signInManager.PasswordSignInAsync(model.UserName, model.Password, false, false);
+            var token = GenerateJwtToken(user);
+            return Ok(new { token });
+        }
 
-            if (!result.Succeeded)
+        [Authorize]
+        [HttpPost("logout")]
+        public async Task<IActionResult> Logout()
+        {
+            await _signInManager.SignOutAsync();
+            return Ok("Выход выполнен");
+        }
+
+        private string GenerateJwtToken(User user)
+        {
+            var jwtSettings = _configuration.GetSection("Jwt");
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["Key"]));
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+            var claims = new[]
             {
-                return Unauthorized("Неверное имя пользователя или пароль");
-            }
+                new Claim(JwtRegisteredClaimNames.Sub, user.UserName),
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                new Claim(ClaimTypes.NameIdentifier, user.Id),
+                new Claim(ClaimTypes.Role, user.Role ?? "User")
+            };
 
-            return Ok(new { message = "Вход выполнен успешно" });
+            var token = new JwtSecurityToken(
+                issuer: jwtSettings["Issuer"],
+                audience: jwtSettings["Audience"],
+                claims: claims,
+                expires: DateTime.UtcNow.AddMinutes(double.Parse(jwtSettings["ExpireMinutes"])),
+                signingCredentials: creds
+            );
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
         }
     }
 }
