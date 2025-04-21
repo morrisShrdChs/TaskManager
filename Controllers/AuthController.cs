@@ -30,8 +30,8 @@ namespace Task_Manager.Controllers
             {
                 UserName = model.UserName,
                 Email = model.Email,
-                Name = model.Name
-                // Можно указать Role, если нужно, например: Role = "User"
+                Name = model.Name,
+                Role = model.Role
             };
 
             var result = await _userManager.CreateAsync(user, model.Password);
