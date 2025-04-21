@@ -1,5 +1,4 @@
-﻿using System.Net.WebSockets;
-using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using TaskManager.Models;
 
@@ -10,12 +9,10 @@ namespace Task_Manager.Controllers
     public class UserController : ControllerBase
     {
         private readonly UserManager<User> _userManager;
-        private readonly SignInManager<User> _signInManager;
 
-        public UserController(UserManager<User> userManager, SignInManager<User> signInManager)
+        public UserController(UserManager<User> userManager)
         {
             _userManager = userManager;
-            _signInManager = signInManager;
         }
 
         [HttpPut("{id}")]
@@ -23,67 +20,32 @@ namespace Task_Manager.Controllers
         {
             var user = await _userManager.FindByIdAsync(id);
             if (user == null)
-            {
                 return NotFound();
-            }
 
             user.Email = updateUser.Email;
             user.UserName = updateUser.UserName;
+            user.Name = updateUser.Name;
+            user.Role = updateUser.Role;
 
             var result = await _userManager.UpdateAsync(user);
-            if(!result.Succeeded)
-            {
+            if (!result.Succeeded)
                 return BadRequest(result.Errors);
-            }
 
             return NoContent();
         }
 
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteUser (string id)
+        public async Task<IActionResult> DeleteUser(string id)
         {
             var user = await _userManager.FindByIdAsync(id);
             if (user == null)
-            {
                 return NotFound();
-            }
 
             var result = await _userManager.DeleteAsync(user);
-            if(!result.Succeeded)
-            {
-                return BadRequest();
-            }
+            if (!result.Succeeded)
+                return BadRequest(result.Errors);
 
             return NoContent();
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> RegisterUser([FromBody] User newUser)
-        {
-            if (newUser == null)
-            {
-                return BadRequest("Нет данных о пользователе");
-            }
-
-            var user = new User
-            {
-                UserName = newUser.UserName,
-                Email = newUser.Email,
-                Name = newUser.Name,
-                Role = newUser.Role,
-                PasswordHash = newUser.PasswordHash
-            };
-
-
-
-            var result = await _userManager.CreateAsync(user, newUser.PasswordHash);
-
-            if (!result.Succeeded)
-            {
-                return BadRequest(result.Errors);
-            }
-
-            return CreatedAtAction(nameof(RegisterUser), new { id = user.Id }, user);
         }
     }
 }
