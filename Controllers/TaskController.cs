@@ -45,18 +45,16 @@ namespace Task_Manager.Controllers
                 return BadRequest("Данные о задаче отсутствуют");
             }
 
-            if (task.User != null && !string.IsNullOrEmpty(task.User.Id))
+            if (!string.IsNullOrEmpty(task.UserId))
             {
-                var user = await _userManager.FindByIdAsync(task.User.Id);
+                var user = await _userManager.FindByIdAsync(task.UserId);
                 if (user == null)
                 {
                     return BadRequest("Пользователь не найден");
                 }
-                task.User = user;
             }
             else
             {
-                task.User = null;
                 task.UserId = null;
             }
 
