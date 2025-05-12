@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using TaskManager.Models;
 
 namespace Task_Manager.Controllers
@@ -13,6 +14,16 @@ namespace Task_Manager.Controllers
         public UserController(UserManager<User> userManager)
         {
             _userManager = userManager;
+        }
+
+        [HttpGet("users")]
+        public async Task<IActionResult> GetUsers()
+        {
+            var users = await _userManager.Users
+                .Select(u => new { u.Id, u.UserName })
+                .ToListAsync();
+
+            return Ok(users);
         }
 
         [HttpPut("{id}")]
