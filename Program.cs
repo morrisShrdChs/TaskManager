@@ -52,6 +52,15 @@ builder.Services.AddIdentity<User, IdentityRole>()
 
 builder.Services.AddControllers().AddJsonOptions(x => x.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
 
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.Events.OnRedirectToLogin = context =>
+    {
+        context.Response.StatusCode = 401;
+        return Task.CompletedTask;
+    };
+});
+
 var app = builder.Build();
 
 if (!app.Environment.IsDevelopment())

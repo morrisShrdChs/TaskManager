@@ -3,11 +3,13 @@ using TaskManager.Models;
 using TaskManager.Data;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Task_Manager.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class TaskController : ControllerBase
     {
         private readonly TaskManagerDbContext _context;
@@ -20,22 +22,38 @@ namespace Task_Manager.Controllers
         }
 
         [HttpGet]
+        [Authorize]
         public async Task<IActionResult> GetAllTasks()
         {
-            var tasks = await _context.Tasks.Include(t => t.User).ToListAsync();
+            var username = User.Identity?.Name;
+
+            if (string.IsNullOrEmpty(username))
+                return Unauthorized();
+
+            var tasks = await _context.Tasks
+                .Include(t => t.User)
+                .Where(t => t.User.UserName == username)
+                .ToListAsync();
+
             return Ok(tasks);
         }
 
         [HttpGet("{id}")]
+        [Authorize]
         public async Task<IActionResult> GetTask(int id)
         {
-            var task = await _context.Tasks.Include(t => t.User).FirstOrDefaultAsync();
+            var task = await _context.Tasks
+                .Include(t => t.User)
+                .FirstOrDefaultAsync(t => t.Id == id);
+
             if (task == null)
             {
                 return NotFound();
             }
+
             return Ok(task);
         }
+
 
         [HttpPost]
         public async Task<IActionResult> CreateTask([FromBody] Tasks task)
