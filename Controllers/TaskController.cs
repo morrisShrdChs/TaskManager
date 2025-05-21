@@ -26,7 +26,7 @@ namespace Task_Manager.Controllers
         public async Task<IActionResult> GetAllTasks()
         {
             var username = User.Identity?.Name;
-
+            Console.WriteLine($"GetAllTasks для пользователя: {username}");
             if (string.IsNullOrEmpty(username))
                 return Unauthorized();
 

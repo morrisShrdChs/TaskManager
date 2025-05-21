@@ -1,65 +1,66 @@
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using TaskManager.Data;
 using TaskManager.Models;
-using Microsoft.IdentityModel.Tokens;
-using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("CorsPolicy",
-        builder => builder
-            .AllowAnyMethod()
+        policy => policy
+            .WithOrigins("http://localhost:59135")
             .AllowCredentials()
-            .SetIsOriginAllowed((host) => true)
-            .AllowAnyHeader());
+            .AllowAnyHeader()
+            .AllowAnyMethod());
 });
 
 builder.Services.AddControllersWithViews();
+
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<TaskManagerDbContext>(options =>
     options.UseNpgsql(connectionString));
 
-builder.Services.AddAuthentication(options =>
+builder.Services.AddIdentity<User, IdentityRole>(options =>
 {
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.Password.RequireDigit = false;
+    options.Password.RequireLowercase = false;
+    options.Password.RequireNonAlphanumeric = false;
+    options.Password.RequireUppercase = false;
 })
-.AddJwtBearer(options =>
-{
-    var jwtSettings = builder.Configuration.GetSection("Jwt");
-    options.TokenValidationParameters = new TokenValidationParameters
-    {
-        ValidateIssuer = true,
-        ValidateAudience = true,
-        ValidateLifetime = true,
-        ValidateIssuerSigningKey = true,
-        ValidIssuer = jwtSettings["Issuer"],
-        ValidAudience = jwtSettings["Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["Key"]))
-    };
-});
-
-builder.Services.AddAuthorization();
-
-builder.Services.AddIdentity<User, IdentityRole>()
     .AddEntityFrameworkStores<TaskManagerDbContext>()
     .AddDefaultTokenProviders();
 
-builder.Services.AddControllers().AddJsonOptions(x => x.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
-
 builder.Services.ConfigureApplicationCookie(options =>
 {
+    options.Cookie.HttpOnly = true;
+    options.Cookie.SameSite = SameSiteMode.None;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    options.LoginPath = "/account/login";
+    options.LogoutPath = "/account/logout";
+    options.AccessDeniedPath = "/account/accessdenied";
+    options.SlidingExpiration = true;
     options.Events.OnRedirectToLogin = context =>
     {
         context.Response.StatusCode = 401;
         return Task.CompletedTask;
     };
+    options.Events.OnRedirectToAccessDenied = context =>
+    {
+        context.Response.StatusCode = 403;
+        return Task.CompletedTask;
+    };
 });
+
+builder.Services.AddAuthentication();
+//("Identity.Application")
+    //.AddCookie("Identity.Application");
+
+builder.Services.AddAuthorization();
+
+builder.Services.AddControllers().AddJsonOptions(x =>
+    x.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
 
 var app = builder.Build();
 
@@ -69,10 +70,11 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseStaticFiles();
-
+app.UseCors("CorsPolicy");
 app.UseRouting();
 
-app.UseCors("CorsPolicy");
+
+
 app.UseAuthentication();
 app.UseAuthorization();
 
