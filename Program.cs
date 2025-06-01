@@ -54,8 +54,6 @@ builder.Services.ConfigureApplicationCookie(options =>
 });
 
 builder.Services.AddAuthentication();
-//("Identity.Application")
-    //.AddCookie("Identity.Application");
 
 builder.Services.AddAuthorization();
 

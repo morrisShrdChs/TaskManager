@@ -94,8 +94,8 @@ namespace Task_Manager.Controllers
 
             task.Name = updatedTask.Name;
             task.Description = updatedTask.Description;
-            task.StartDate = updatedTask.StartDate;
-            task.ExpDate = updatedTask.ExpDate;
+            //task.StartDate = updatedTask.StartDate;
+            //task.ExpDate = updatedTask.ExpDate;
             task.StatusId = updatedTask.StatusId;
 
             _context.Tasks.Update(task);
